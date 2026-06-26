@@ -2,7 +2,7 @@
 
 🎯 Project Objective
 
-The goal of this project is to build a highly reliable Retrieval-Augmented Generation (RAG) system for customer support and, crucially, to implement an automated quality assurance pipeline using the Ragas framework.
+The goal of this project is to build a Retrieval-Augmented Generation (RAG) system for customer support and to implement an automated quality assurance pipeline using the **Ragas** framework.
 Rather than relying on manual spot-checking, this project demonstrates how to use LLM-as-a-judge methodologies to quantitatively measure hallucinations, retrieval accuracy, and response usefulness in production AI systems.
 
 ## 🛠️ How the Core Application Works (`rag_app.py`)
