@@ -35,17 +35,20 @@ The pipeline processes queries through five distinct stages:
 
 ## AI Quality Pipeline
 
-🗂️ 1. Designing the Golden Test Set
+## 🗂️ 1. Designing the Golden Test Set
+To evaluate a RAG pipeline, you must first establish a baseline of truth. I built my local Chroma vector database and my custom evaluation dataset (`eval_baseline.csv`) using the [Customer Support Tickets - CRM dataset](https://www.kaggle.com/datasets/ajverse/customer-support-tickets-crm-dataset) on Kaggle. 
+
+This dataset provides 20,000 synthetic omnichannel support tickets, allowing me to test the AI against realistic, unstructured customer complaints without risking the exposure of real Personally Identifiable Information (PII).
+
+My test set design strategy focused on three specific scenarios found within the dataset:
+* **Direct Extractions:** Queries that map perfectly to a single ticket's `Ticket_Description` (e.g., *"What happens when I open the settings tab?"*). This tests the retriever's baseline capability.
+* **Synthesis Queries:** Questions requiring the AI to combine context from the data to form a cohesive policy answer.
+* **Adversarial / Out-of-Scope Queries:** I deliberately included questions completely unrelated to tech support (e.g., *"What is the company policy for employee weekend overtime pay?"*). The `ground_truth` for these was mapped to "I do not know." This is a critical QA step to ensure the AI gracefully handles missing context without hallucinating outside of the CRM data.
 
 To evaluate a RAG pipeline, you must first establish a baseline of truth. I designed a custom evaluation dataset (eval_baseline.csv) based on a dataset of real-world synthetic customer support tickets (support_tickets.csv).
 
-My test set design strategy focused on three specific scenarios:
-* Direct Extractions: Queries that map perfectly to a single ticket (e.g., "What happens when I open the settings tab?"). This tests the retriever's baseline capability.
-* Synthesis Queries: Questions requiring the AI to combine context from the data.
-* Adversarial / Out-of-Scope Queries: I deliberately included questions completely unrelated to customer support (e.g., "What is the company policy for employee weekend overtime pay?"). The ground_truth for these was mapped to "I do not know." This is a critical QA step to ensure the AI gracefully handles missing context without hallucinating.
 
-
-⚖️ 2. Measuring Quality with Ragas
+## ⚖️ 2. Measuring Quality with Ragas
 
 Once the test set was designed, I built an automated evaluation script (evaluate_metrics.py) that queries the live RAG application and scores the outputs using the Ragas framework. I focused on three primary metrics:
 
