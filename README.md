@@ -1,4 +1,4 @@
-**Automated RAG Quality Evaluation Pipeline**
+# Automated RAG Quality Evaluation Pipeline
 
 🎯 Project Objective
 
