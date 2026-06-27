@@ -74,20 +74,20 @@ To ensure highly reliable information retrieval, specifically for exact-match id
 
 ### Core AI & Orchestration
 
-Language: Python
-Framework: LangChain (v1.0+)
-LLM Provider: OpenAI (gpt-4o-mini for generation, text-embedding-3-small for embeddings)
-Architecture: Hybrid Ensemble Retriever
+* Language: Python
+* Framework: LangChain (v1.0+)
+* LLM Provider: OpenAI (gpt-4o-mini for generation, text-embedding-3-small for embeddings)
+* Architecture: Hybrid Ensemble Retriever
 
 ### Data & Retrieval
-Vector Database: ChromaDB (Semantic Search)
-Keyword Search: BM25 / rank-bm25 (Exact-Match / ID Search)
-Document Handling: CSVLoader for data ingestion
+* Vector Database: ChromaDB (Semantic Search)
+* Keyword Search: BM25 / rank-bm25 (Exact-Match / ID Search)
+* Document Handling: CSVLoader for data ingestion
 
 ### QA & Automated Evaluation
-Testing Framework: Ragas (v0.2+) for LLM-as-a-judge metrics (Context Precision, Faithfulness, Answer Relevancy)
-Data Processing: Pandas
-Dataset Management: Hugging Face datasets
+* Testing Framework: Ragas (v0.2+) for LLM-as-a-judge metrics (Context Precision, Faithfulness, Answer Relevancy)
+* Data Processing: Pandas
+* Dataset Management: Hugging Face datasets
 
 ## 🚀 How to Run the Pipeline
 1. Clone the repository and activate your virtual environment.
