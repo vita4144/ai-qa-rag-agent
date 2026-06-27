@@ -67,6 +67,28 @@ Once the test set was designed, I built an automated evaluation script (evaluate
 * What it measures: How directly the AI addressed the user's specific prompt.
 * How it works: The evaluator analyzes the question and the answer to penalize evasive, incomplete, or overly verbose responses. A highly faithful answer is useless if it doesn't actually solve the customer's problem.
 
+## 🛠 Tech Stack & Architecture
+This project implements a reliable Retrieval-Augmented Generation (RAG) pipeline, combining semantic understanding with exact-match keyword searching, backed by an automated QA evaluation framework.
+
+To ensure highly reliable information retrieval, specifically for exact-match identifiers like Support Ticket IDs—this system utilizes an Ensemble Retriever. It merges the semantic spatial-search capabilities of ChromaDB with the exact-keyword scoring of the BM25 algorithm. Pipeline health and data drift are continuously monitored using the Ragas evaluation framework to guarantee mathematical certainty in answer relevancy and source faithfulness.
+
+### Core AI & Orchestration
+
+Language: Python
+Framework: LangChain (v1.0+)
+LLM Provider: OpenAI (gpt-4o-mini for generation, text-embedding-3-small for embeddings)
+Architecture: Hybrid Ensemble Retriever
+
+### Data & Retrieval
+Vector Database: ChromaDB (Semantic Search)
+Keyword Search: BM25 / rank-bm25 (Exact-Match / ID Search)
+Document Handling: CSVLoader for data ingestion
+
+### QA & Automated Evaluation
+Testing Framework: Ragas (v0.2+) for LLM-as-a-judge metrics (Context Precision, Faithfulness, Answer Relevancy)
+Data Processing: Pandas
+Dataset Management: Hugging Face datasets
+
 ## 🚀 How to Run the Pipeline
 1. Clone the repository and activate your virtual environment.
 2. Install dependencies: pip install -r requirements.txt
