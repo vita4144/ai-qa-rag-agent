@@ -67,7 +67,7 @@ Once the test set was designed, I built an automated evaluation script (evaluate
 * What it measures: How directly the AI addressed the user's specific prompt.
 * How it works: The evaluator analyzes the question and the answer to penalize evasive, incomplete, or overly verbose responses. A highly faithful answer is useless if it doesn't actually solve the customer's problem.
 
-## 🛠 Tech Stack & Architecture
+## 🛠 3. Tech Stack & Architecture
 This project implements a reliable Retrieval-Augmented Generation (RAG) pipeline, combining semantic understanding with exact-match keyword searching, backed by an automated QA evaluation framework.
 
 To ensure highly reliable information retrieval, specifically for exact-match identifiers like Support Ticket IDs—this system utilizes an Ensemble Retriever. It merges the semantic spatial-search capabilities of ChromaDB with the exact-keyword scoring of the BM25 algorithm. Pipeline health and data drift are continuously monitored using the Ragas evaluation framework to guarantee mathematical certainty in answer relevancy and source faithfulness.
