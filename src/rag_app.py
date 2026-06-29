@@ -1,69 +1,76 @@
 import os
+import warnings
 from dotenv import load_dotenv
+
+# Suppress LangChain community deprecation warnings to keep the terminal clean
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+# --- RAG ARCHITECTURE IMPORTS ---
 from langchain_community.document_loaders import CSVLoader
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_community.retrievers import BM25Retriever
+from langchain_classic.retrievers import EnsembleRetriever
 from langchain_community.vectorstores import Chroma
-from langchain_classic.chains import create_retrieval_chain
-from langchain_classic.chains.combine_documents import create_stuff_documents_chain
+from langchain_openai import OpenAIEmbeddings
+
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-def initialize_vector_db(file_path):
-    loader = CSVLoader(file_path=file_path, source_column="Ticket_Description")
+def initialize_retrievers(file_path):
+    # Only print this if we are running the evaluation script to keep the chat clean
+    if __name__ != "__main__":
+        print("Building Hybrid Search Retrievers (Chroma + BM25)...")
+        
+    loader = CSVLoader(file_path=file_path)
     docs = loader.load()
-    embeddings = OpenAIEmbeddings()
-    vector_store = Chroma.from_documents(docs, embeddings)
-    return vector_store
 
-def setup_rag_chain(vector_store):
-    retriever = vector_store.as_retriever(search_kwargs={"k": 3})
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    # 1. Vector Retriever (Semantic Search via Chroma)
+    vector_store = Chroma.from_documents(docs, OpenAIEmbeddings())
+    vector_retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+
+    # 2. BM25 Retriever (Exact Keyword Search)
+    bm25_retriever = BM25Retriever.from_documents(docs)
+    bm25_retriever.k = 3
+
+    # 3. Ensemble Retriever (Combines both 50/50)
+    ensemble_retriever = EnsembleRetriever(
+        retrievers=[bm25_retriever, vector_retriever],
+        weights=[0.5, 0.5] 
+    )
     
+    return ensemble_retriever
+
+def setup_rag_chain(ensemble_retriever):
     system_prompt = (
-        "You are a reliable customer support QA assistant. Use the following pieces of "
-        "retrieved context to answer the user's question accurately. If the context does not contain "
-        "the answer, explicitly state that you do not know.\n\n"
+        "You are an internal Support Triage Analyst for a software company. "
+        "Your job is NOT to directly answer the user's question. "
+        "Instead, analyze the user's input and use the retrieved historical tickets to summarize their intent. "
+        "Always respond in the third person, describing what the user wants (e.g., 'The customer is inquiring about...'). "
+        "If the retrieved context is entirely unrelated to the user's input, explicitly state that the intent cannot be classified.\n\n"
         "Context:\n{context}"
     )
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
-        ("human", "{input}"),
+        ("human", "{question}")
     ])
-    
-    question_answer_chain = create_stuff_documents_chain(llm, prompt)
-    rag_chain = create_retrieval_chain(retriever, question_answer_chain)
-    return rag_chain
 
-def query_app(rag_chain, question):
-    response = rag_chain.invoke({"input": question})
-    contexts = [doc.page_content for doc in response["context"]]
-    return {
-        "answer": response["answer"],
-        "contexts": contexts
-    }
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-# Global cache variable to keep the chat loop fast and efficient
-_chain_instance = None
+    def format_docs(docs):
+        return "\n\n".join(doc.page_content for doc in docs)
 
-def query_rag_system(user_query, vector_db):
-    """
-    Bridges the interactive loop with your LangChain retrieval infrastructure.
-    Caches the chain layout so it does not rebuild on every single keystroke.
-    """
-    global _chain_instance
-    if _chain_instance is None:
-        # Generates your classic retrieval chain layout using your existing setup function
-        _chain_instance = setup_rag_chain(vector_db)
+    rag_chain = (
+        {"context": ensemble_retriever | format_docs, "question": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
     
-    # Run the user input through the active pipeline
-    raw_response = _chain_instance.invoke({"input": user_query})
-    
-    # Normalize keys so your loop's 'contexts' check never throws a KeyError
-    return {
-        "answer": raw_response.get("answer", "No response generated."),
-        "contexts": raw_response.get("context", raw_response.get("contexts", []))
-    }
+    return rag_chain, ensemble_retriever
 
 def run_interactive_chat():
     print("==================================================")
@@ -71,33 +78,26 @@ def run_interactive_chat():
     print("Type your question below. Type 'exit' or 'quit' to stop.")
     print("==================================================")
     
-    # Initialize your vector database using the correct literal file string
-    vector_db = initialize_vector_db("support_tickets.csv") 
+    # Initialize the architecture
+    ensemble_retriever = initialize_retrievers("support_tickets.csv")
+    rag_chain, _ = setup_rag_chain(ensemble_retriever)
     
     while True:
-        user_query = input("\n👤 You: ")
+        user_input = input("\nYou: ")
         
-        # Check if the user wants to exit
-        if user_query.strip().lower() in ['exit', 'quit']:
-            print("Goodbye!")
+        if user_input.lower() in ['exit', 'quit']:
+            print("Shutting down Support Agent...")
             break
             
-        if not user_query.strip():
+        if not user_input.strip():
             continue
             
         try:
-            # Query your stable RAG application pipeline
-            response = query_rag_system(user_query, vector_db)
-            
-            print(f"\n🤖 Agent: {response['answer']}")
-            
-            # Print the source tickets for verification
-            print("\n📌 [QA Source Context Used]:")
-            for i, doc in enumerate(response['contexts'], 1):
-                print(f"  Snippet {i}: {doc.page_content[:120]}...")
-                
+            # Stream or invoke the response
+            response = rag_chain.invoke(user_input)
+            print(f"\n🤖 Agent: {response}")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"\n⚠️ System Error: {e}")
 
 if __name__ == "__main__":
     run_interactive_chat()
